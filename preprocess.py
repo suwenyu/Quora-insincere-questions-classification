@@ -11,6 +11,8 @@ from nltk.corpus import stopwords
 
 from gensim.models import KeyedVectors
 
+
+
 import os
 import collections
 
@@ -21,8 +23,8 @@ def preprocessing_data(path, feature_selection, sentence_len, embedding_size, pr
 	# raw_data = pd.read_csv(path+'train_data_2', encoding='utf-8')
 	# raw_data_test = pd.read_csv(path+'test_data_2', encoding='utf-8')
 
-	raw_data = pd.read_csv(path+'train.csv', encoding='utf-8')
-	raw_data_test = pd.read_csv(path+'test.csv', encoding='utf-8')
+	raw_data = pd.read_csv(path+'trainsmall.csv', encoding='utf-8')
+	raw_data_test = pd.read_csv(path+'testsmall.csv', encoding='utf-8')
 
 	print(raw_data.shape)
 	print(raw_data.columns)
@@ -95,7 +97,7 @@ def preprocessing_data(path, feature_selection, sentence_len, embedding_size, pr
 	tr_ans = raw_data.target.values
 
 	print("Split data into validation data with same random state...")
-	X_train, X_val, y_train, y_val = train_test_split(tr_vec, tr_ans, test_size=0.2, random_state=0)
+	X_train, X_val, y_train, y_val = train_test_split(tr_vec, tr_ans, test_size=0.1, random_state=0)
 
 	return X_train, y_train, X_val, y_val, te_vec, vocab_size
 

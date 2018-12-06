@@ -45,7 +45,7 @@ X_train, y_train, X_val, y_val, te_vec, vocab_size = preprocess.preprocessing_da
 
 ### build model
 # pred_test_y = models.model('BernoulliNB', vocab_size=vocab_size, sentence_len=sentence_len, embedding_size=embedding_size, tr_vec=X_train, tr_ans=y_train, val_vec=X_val, val_ans=y_val ,te_vec=te_vec )
-pred_test_y = models.model(model, vocab_size=vocab_size, sentence_len=sentence_len, embedding_size=embedding_size, tr_vec=X_train, tr_ans=y_train, val_vec=X_val, val_ans=y_val ,te_vec=te_vec )
+pred_test_y = models.model(model, feature_selection, vocab_size=vocab_size, sentence_len=sentence_len, embedding_size=embedding_size, tr_vec=X_train, tr_ans=y_train, val_vec=X_val, val_ans=y_val ,te_vec=te_vec )
 # print(model.history.history['acc'])
 
 ### plot the learning rate

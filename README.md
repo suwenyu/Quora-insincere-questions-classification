@@ -15,8 +15,8 @@
 - Dataset
 put under the all directory
 ```
-> ./all/train.csv
-> ./all/test.csv
+> ./all/trainsmall.csv
+> ./all/testsmall.csv
 ```
 
 - Run the main.py
@@ -29,14 +29,19 @@ Feature_selection_method:
 2. tfidf_tokenize
 
 Models:
-1. MultinomialNB
-2. ComplementNB
-3. BernoulliNB
-4. SVM
-5. LSTM
-6. SELFAttentive
-7. LSTMAttention
+1. BernoulliNB
+2. LSTM (can only use tokenize)
+3. SELFAttentive (can only use tokenize)
+For exmaple,
+```
+> python3 main.py tokenize BernoulliNB
+```
+It will print out the validation accuracy.
 
+
+#####Results
+1. Output results are not the same to the writing parts because those are run on the Kaggle kernel which is better efficient than my computer.
+2. In addition, I did not do any test locally. I submitted all the results on the Kaggle platform to get the real testing results.
 
 
 

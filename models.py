@@ -7,48 +7,11 @@ from keras.layers import merge, TimeDistributed, Lambda, Flatten, Activation, Re
 from keras.layers.merge import Dot
 from keras import backend as K
 
-def lstmattentionModel(vocab_size, sentence_len, embedding_size, tr_vec, tr_ans, val_vec, val_ans ,te_vec):
-	inp = Input(shape=(sentence_len,))
-	# x = Embedding(max_num_words, seq_len, weights=[embedding_matrix])(inp)
-	x = Embedding(input_dim = vocab_size, 
-					input_length = sentence_len, 
-					output_dim = embedding_size)(inp)
+from keras.models import model_from_json
 
-	x = LSTM(128, return_sequences=True)(x)
-	
-	# compute weight of the sequence
-	attention = TimeDistributed(Dense(1, activation='tanh'))(x) 
-	attention = Flatten()(attention)
-	attention = Activation('softmax')(attention)
-	attention = RepeatVector(128)(attention)
-	attention = Permute([2, 1])(attention)
+import pickle
+import os
 
-	# apply the attention
-	sent_representation = Dot(axes=[1,1])([x, attention])
-	sent_representation = Lambda(lambda x: K.sum(x, axis=1))(sent_representation)
-
-	# probabilities = Dense(3, activation='softmax')(sent_representation)	
-
-	lstm_em = Dense(64, activation="relu")(sent_representation)
-	lstm_em = Dropout(0.1)(lstm_em)
-	outp = Dense(1, activation="sigmoid")(lstm_em)
-
-
-	model = Model(inputs=inp, outputs=outp)
-	print(model.summary())
-
-	from keras.optimizers import Adam
-	adam = Adam(lr=0.001)
-
-	model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
-
-	model.fit(tr_vec, tr_ans,batch_size=512 ,epochs=2, validation_data=(val_vec, val_ans), verbose=True)
-
-	print ('make predictions ...')
-	#clf_predictions = clf.predict_proba(te_vec)
-	preds = model.predict(te_vec, batch_size=1024)
-	pred_test_y = (preds>0.35).astype(int)
-	return pred_test_y
 
 def selfattentiveModel(vocab_size, sentence_len, embedding_size, tr_vec, tr_ans, val_vec, val_ans ,te_vec):
 	inp = Input(shape=(sentence_len,))
@@ -69,7 +32,7 @@ def selfattentiveModel(vocab_size, sentence_len, embedding_size, tr_vec, tr_ans,
 	attention = Dense(30,input_shape=(350,))(attention)
 
 	attention = Activation('softmax')(attention)
-	attention = Permute([2, 1])(attention)
+	# attention = Permute([2, 1])(attention)
 
 	# print(attention.shape)
 
@@ -94,9 +57,21 @@ def selfattentiveModel(vocab_size, sentence_len, embedding_size, tr_vec, tr_ans,
 
 	model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
 
-	model.fit(tr_vec, tr_ans,batch_size=512 ,epochs=2, validation_data=(val_vec, val_ans), verbose=True)
+	
+	if os.path.isfile('save/selfattentiveModel.json'):
+		json_file = open('save/selfattentiveModel.json', 'r')
+		loaded_model_json = json_file.read()
+		json_file.close()
+		loaded_model = model_from_json(loaded_model_json)
+	else:
+		model.fit(tr_vec, tr_ans,batch_size=512 ,epochs=2, validation_data=(val_vec, val_ans), verbose=True)
+		model_json = model.to_json()
+		with open("save/selfattentiveModel.json", "w") as json_file:
+			json_file.write(model_json)
 
-	print ('make predictions ...')
+	print ('make validation predictions ...')
+	print(model.evaluate(x=val_vec, y=val_ans, batch_size=1024, verbose=1))
+	
 	#clf_predictions = clf.predict_proba(te_vec)
 	preds = model.predict(te_vec, batch_size=1024)
 	pred_test_y = (preds>0.35).astype(int)
@@ -124,72 +99,44 @@ def lstmModel(vocab_size, sentence_len, embedding_size, tr_vec, tr_ans, val_vec,
 
 	model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
 
-	model.fit(tr_vec, tr_ans,batch_size=512 ,epochs=2, validation_data=(val_vec, val_ans), verbose=True)
+	# model.fit(tr_vec, tr_ans,batch_size=512 ,epochs=2, validation_data=(val_vec, val_ans), verbose=True)
 
-	print ('make predictions ...')
+	if os.path.isfile('save/lstmModel.json'):
+		json_file = open('save/lstmModel.json', 'r')
+		loaded_model_json = json_file.read()
+		json_file.close()
+		loaded_model = model_from_json(loaded_model_json)
+	else:
+		model.fit(tr_vec, tr_ans,batch_size=512 ,epochs=2, validation_data=(val_vec, val_ans), verbose=True)
+		model_json = model.to_json()
+		with open("save/lstmModel.json", "w") as json_file:
+			json_file.write(model_json)
+
+	print ('make validation predictions ...')
+	print(model.evaluate(x=val_vec, y=val_ans, batch_size=1024, verbose=1))
+
 	#clf_predictions = clf.predict_proba(te_vec)
 	preds = model.predict(te_vec, batch_size=1024)
 	pred_test_y = (preds>0.35).astype(int)
 	return pred_test_y
 
-def SVM(tr_vec, tr_ans, val_vec, val_ans, te_vec):
-	from sklearn.svm import SVC
-	import matplotlib.pyplot as plt
-	import numpy as np
 
-	score = []
-	for i in range(1,10):
-		print(i)
-		clf = SVC(gamma='auto', C=i)
-		clf.fit(tr_vec, tr_ans)
-		score.append(clf.score(val_vec, val_ans))
-	np.asarray(score)
-
-	fig, ax = plt.subplots( )
-	line = ax.plot([i for i in range(1,10)], score)
-	ax.legend()
-	plt.show()
-	
-
-	clf = SVC(gamma='auto', C=np.argmax(score)+1)
-	clf.fit(tr_vec, tr_ans)
-	print ('make predictions ...')
-	#clf_predictions = clf.predict_proba(te_vec)
-	preds = clf.predict(te_vec)
-	pred_test_y = (preds>0.35).astype(int)
-	return pred_test_y
-
-
-
-	# C_range_new = [0.001,0.01,0.1,1,10,100]
-	# gamma_range_new = [0.01, 0.1, 1, 10, 100]
-	# param_grid = dict(gamma=gamma_range_new, C=C_range_new)
-	
-	# from sklearn.metrics import fbeta_score, make_scorer
-	# from sklearn.model_selection import GridSearchCV
-	# grid = GridSearchCV(SVC(), param_grid=param_grid, cv=5)
-	# grid.fit(val_vec, val_ans)
-
-	# scores = grid.cv_results_['mean_test_score'].reshape(len(C_range_new),
-	#                                                      len(gamma_range_new))
-
-	# import matplotlib.pyplot as plt
-	# import numpy as np
-	# plt.figure(figsize=(8, 6))
-	# plt.subplots_adjust(left=.2, right=0.95, bottom=0.15, top=0.95)
-	# plt.imshow(scores, interpolation='nearest', cmap=plt.cm.hot)
-	# plt.xlabel('gamma')
-	# plt.ylabel('C')
-	# plt.colorbar()
-	# plt.xticks(np.arange(len(gamma_range_new)), gamma_range_new, rotation=45)
-	# plt.yticks(np.arange(len(C_range_new)), C_range_new)
-	# plt.title('Validation accuracy')
-	# plt.show()
-def bernoulliNB(tr_vec, tr_ans, val_vec, val_ans, te_vec):
+def bernoulliNB(tr_vec, tr_ans, val_vec, val_ans, te_vec, feature_selection):
 	from sklearn.naive_bayes import BernoulliNB
-	clf = BernoulliNB(alpha=1.0)
-	clf.fit(tr_vec, tr_ans)
-	print(clf.score(val_vec, val_ans))
+
+	# print(os.path.isfile('save/bernoulliNB_'+feature_selection+'.pickle'))
+	if os.path.isfile('save/bernoulliNB_'+feature_selection+'.pickle'):
+		with open('save/bernoulliNB_'+feature_selection+'.pickle', 'rb') as f:
+			clf = pickle.load(f)
+			print(clf.score(val_vec, val_ans))
+	else:
+		clf = BernoulliNB(alpha=1.0)
+		clf.fit(tr_vec, tr_ans)
+		print(clf.score(val_vec, val_ans))
+		
+		with open('save/bernoulliNB_'+feature_selection+'.pickle', 'wb') as f:
+			pickle.dump(clf, f)
+
 
 	print ('make predictions ...')
 	#clf_predictions = clf.predict_proba(te_vec)
@@ -222,29 +169,25 @@ def multinomialNB(tr_vec, tr_ans, val_vec, val_ans, te_vec):
 	return pred_test_y
 
 
-def model(modelname, vocab_size, sentence_len, embedding_size, tr_vec, tr_ans, val_vec, val_ans ,te_vec ):
+def model(modelname, feature_selection, vocab_size, sentence_len, embedding_size, tr_vec, tr_ans, val_vec, val_ans ,te_vec ):
 	# Building an LSTM model
 	print("Building Model")
-	if modelname == "MultinomialNB":
-		predict = multinomialNB(tr_vec, tr_ans, val_vec, val_ans ,te_vec)
-		return predict
-	if modelname == "ComplementNB":
-		predict = complementNB(tr_vec, tr_ans, val_vec, val_ans ,te_vec)
-		return predict
+	# if modelname == "MultinomialNB":
+	# 	predict = multinomialNB(tr_vec, tr_ans, val_vec, val_ans ,te_vec, feature_selection)
+	# 	return predict
+	# if modelname == "ComplementNB":
+	# 	predict = complementNB(tr_vec, tr_ans, val_vec, val_ans ,te_vec)
+	# 	return predict
 	if modelname == "BernoulliNB":
-		predict = bernoulliNB(tr_vec, tr_ans, val_vec, val_ans ,te_vec)
+		predict = bernoulliNB(tr_vec, tr_ans, val_vec, val_ans ,te_vec, feature_selection)
 		return predict
 	if modelname == "SELFAttentive":
 		predict = selfattentiveModel(vocab_size, sentence_len, embedding_size, tr_vec, tr_ans, val_vec, val_ans ,te_vec)
 		return predict
-	if modelname=="LSTMAttention":
-		predict = lstmattentionModel(vocab_size, sentence_len, embedding_size, tr_vec, tr_ans, val_vec, val_ans ,te_vec)
-		return predict
+
 
 	if modelname=="LSTM":
 		predict = lstmModel(vocab_size, sentence_len, embedding_size, tr_vec, tr_ans, val_vec, val_ans ,te_vec)
 		return predict
 
-	if modelname=="SVM":
-		predict = SVM(tr_vec, tr_ans, val_vec, val_ans, te_vec)
-		return predict
+
